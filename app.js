@@ -1,3 +1,6 @@
+const SHEET_ID = '1ZgGXVKcxBfCVpSdtWJeVoGQlgDhl_EwwXGNvcpApBNc';
+const API_KEY  = 'AIzaSyAmCpZLQz9dRv2G9gUQeq5UUobEPRJBTHM';
+const SCRIPT_MOM_URL = 'https://script.google.com/macros/s/AKfycbyTq9QVn5ZZMQRYwCHGJInym1N_pJXxCPKDqVzATmijowbCZIt0b5PMRPiUrV7Yx4sz/exec'; // <-- Incolla qui l'URL
 // ── Configurazione Google Sheets ──────────────────────
 const SHEET_ID = '1ZgGXVKcxBfCVpSdtWJeVoGQlgDhl_EwwXGNvcpApBNc';
 const API_KEY  = 'AIzaSyAmCpZLQz9dRv2G9gUQeq5UUobEPRJBTHM';
@@ -193,18 +196,32 @@ function apriDettaglio(a) {
   driveEl.textContent = a.drive ? 'Apri cartella Drive' : '—';
   driveEl.href = a.drive || '#';
 
-  // Mostra i MOM in cui viene citata questa azienda
-  const momCollegati = mom.filter(m =>
-    m.azienda.toLowerCase().includes(a.nome.toLowerCase())
-  );
-  document.getElementById('det-mom').textContent =
-    momCollegati.length > 0
-      ? momCollegati.map(m => m.titolo).join(', ')
-      : a.mom || '—';
+  // ── Ricerca automatica file MOM su Google Drive ──
+  const contenitoreMom = document.getElementById('det-mom-links');
+  contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #888;">Cerco verbali...</span>';
 
-  document.getElementById('nuovo-stato').value = a.stato;
-  renderTabella();
-}
+  fetch(`${SCRIPT_MOM_URL}?azienda=${encodeURIComponent(a.nome)}`)
+    .then(response => response.json())
+    .then(files => {
+      if (files.error) {
+        contenitoreMom.innerHTML = `<span style="font-size: 13px; color: #ff2a2a;">Errore: ${files.error}</span>`;
+        return;
+      }
+
+      if (files.length > 0) {
+        contenitoreMom.innerHTML = files.map(f => `
+          <a href="${f.url}" target="_blank" style="display: flex; align-items: center; gap: 8px; background: #E6F1FB; padding: 8px 12px; border-radius: 6px; text-decoration: none; color: #0C447C; font-size: 12px; font-weight: 500; border: 1px solid #B6D4F0; transition: background 0.2s;">
+            <i class="ti ti-file-word" style="font-size: 16px;"></i> ${f.nome}
+          </a>
+        `).join('');
+      } else {
+        contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #888;">Nessun verbale trovato.</span>';
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #ff2a2a;">Errore di rete.</span>';
+    });
 
 function chiudiDettaglio() {
   aziendaSelezionata = null;
