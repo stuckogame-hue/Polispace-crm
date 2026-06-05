@@ -1,7 +1,6 @@
-const SHEET_ID = '1ZgGXVKcxBfCVpSdtWJeVoGQlgDhl_EwwXGNvcpApBNc';
-const API_KEY  = 'AIzaSyAmCpZLQz9dRv2G9gUQeq5UUobEPRJBTHM';
-const SCRIPT_MOM_URL = 'https://script.google.com/macros/s/AKfycbyTq9QVn5ZZMQRYwCHGJInym1N_pJXxCPKDqVzATmijowbCZIt0b5PMRPiUrV7Yx4sz/exec'; // <-- Incolla qui l'URL
-// ── Configurazione Google Sheets ──────────────────────
+// ── Configurazione API e URL ──────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyeiw_mnO4TQbAWLh_KKsqJN5LcmS_wxA0ng9_CY0q7c929xc8pIJfyeN2ynLJvZ8U_dg/exec';
+const SCRIPT_MOM_URL = 'https://script.google.com/macros/s/AKfycbyTq9QVn5ZZMQRYwCHGJInym1N_pJXxCPKDqVzATmijowbCZIt0b5PMRPiUrV7Yx4sz/exec';
 const SHEET_ID = '1ZgGXVKcxBfCVpSdtWJeVoGQlgDhl_EwwXGNvcpApBNc';
 const API_KEY  = 'AIzaSyAmCpZLQz9dRv2G9gUQeq5UUobEPRJBTHM';
 
@@ -222,6 +221,7 @@ function apriDettaglio(a) {
       console.error(err);
       contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #ff2a2a;">Errore di rete.</span>';
     });
+} // <-- Questa parentesi graffa chiude correttamente apriDettaglio!
 
 function chiudiDettaglio() {
   aziendaSelezionata = null;
@@ -478,13 +478,21 @@ document.getElementById('modal-mom').addEventListener('click', e => {
   }
 });
 
-document.getElementById('btn-salva-mom').addEventListener('click', () => {
+// SALVATAGGIO DEI MOM SU GOOGLE SHEETS
+document.getElementById('btn-salva-mom').addEventListener('click', async () => {
   const titolo = document.getElementById('m-titolo').value.trim();
   if (!titolo) {
     alert('Il titolo è obbligatorio!');
     return;
   }
 
+  // Prepariamo il bottone mostrando che sta caricando
+  const bottoneSalva = document.getElementById('btn-salva-mom');
+  const testoOriginale = bottoneSalva.innerHTML;
+  bottoneSalva.innerHTML = '<i class="ti ti-loader" style="display:inline-block; animation:spin 1s linear infinite;"></i> Salvataggio...';
+  bottoneSalva.disabled = true;
+
+  // Raccogliamo i dati dal form
   const nuovoMom = {
     titolo:        titolo,
     data:          document.getElementById('m-data').value,
@@ -495,15 +503,41 @@ document.getElementById('btn-salva-mom').addEventListener('click', () => {
     note:          document.getElementById('m-note').value,
   };
 
-  mom.push(nuovoMom);
-  document.getElementById('modal-mom').classList.remove('aperto');
+  try {
+    // Inviamo i dati al nostro script Google tramite POST
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        azione: 'salvaMom',
+        dati: nuovoMom
+      })
+    });
 
-  ['m-titolo','m-partecipanti','m-azienda','m-punti','m-azioni','m-note'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
+    const result = await response.json();
 
-  renderMom();
-  alert(`MOM "${titolo}" salvato!`);
+    if (result.success) {
+      // Se è andato tutto bene, lo aggiungiamo alla lista in memoria
+      mom.unshift(nuovoMom); 
+      
+      // Chiudiamo il form e lo svuotiamo
+      document.getElementById('modal-mom').classList.remove('aperto');
+      ['m-titolo','m-partecipanti','m-azienda','m-punti','m-azioni','m-note'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+
+      renderMom();
+      alert(`MOM "${titolo}" salvato correttamente su Google Sheets!`);
+    } else {
+      alert(`Errore durante il salvataggio: ${result.error}`);
+    }
+  } catch (error) {
+    alert("Errore di connessione. Riprova.");
+    console.error(error);
+  } finally {
+    // Rimettiamo il bottone allo stato originale
+    bottoneSalva.innerHTML = testoOriginale;
+    bottoneSalva.disabled = false;
+  }
 });
 
 // ── Avvio e Sistema di Login ───────────────────────────
