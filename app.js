@@ -10,7 +10,6 @@ const FOGLI = [
   'CRT // Cubesat Companies',
   'CRT // RoverTech Companies'
 ];
-
 const NOMI_BREVI = {
   'CRT // General Companies':   'General',
   'CRT // SpaceTech Companies': 'SpaceTech',
@@ -85,8 +84,46 @@ function mostraPagina(pagina) {
 }
 
 // ── Caricamento dati da Google Sheets ─────────────────
+function mostraCaricamento(attivo) {
+  const tbody = document.getElementById('tbody');
+  if (attivo) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; padding:3rem; color:#888;">
+          <i class="ti ti-loader" style="font-size:24px; display:block; margin-bottom:8px;"></i>
+          Caricamento da Google Sheets...
+        </td>
+      </tr>`;
+  }
+}
+
+// NUOVO: Carica i MOM dal foglio
+async function leggiMomDalFoglio() {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/MOM?key=${API_KEY}`;
+  try {
+    const risposta = await fetch(url);
+    const dati = await risposta.json();
+    mom = [];
+    if (dati.values && dati.values.length > 1) {
+      const righe = dati.values.slice(1); // Salta le intestazioni
+      for (const riga of righe) {
+        mom.push({
+          data:         riga[0] || '',
+          titolo:       riga[1] || '',
+          partecipanti: riga[2] || '',
+          azienda:      riga[3] || '',
+          punti:        riga[4] || '',
+          azioni:       riga[5] || '',
+          note:         riga[6] || ''
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Errore caricamento MOM:', err);
+  }
+}
+
 async function leggiAziende() {
-  mostraCaricamento(true);
   aziende = [];
 
   for (const foglio of FOGLI) {
@@ -113,7 +150,6 @@ async function leggiAziende() {
           sito:      riga[11] || '',
           drive:     riga[12] || '',
           note:      riga[13] || '',
-          mom:       riga[18] || '',
           foglio:    NOMI_BREVI[foglio] || foglio,
         });
       }
@@ -125,19 +161,6 @@ async function leggiAziende() {
   datiVis = [...aziende];
   mostraCaricamento(false);
   renderTabella();
-}
-
-function mostraCaricamento(attivo) {
-  const tbody = document.getElementById('tbody');
-  if (attivo) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align:center; padding:3rem; color:#888;">
-          <i class="ti ti-loader" style="font-size:24px; display:block; margin-bottom:8px;"></i>
-          Caricamento da Google Sheets...
-        </td>
-      </tr>`;
-  }
 }
 
 // ── Tabella aziende ───────────────────────────────────
@@ -195,33 +218,53 @@ function apriDettaglio(a) {
   driveEl.textContent = a.drive ? 'Apri cartella Drive' : '—';
   driveEl.href = a.drive || '#';
 
-  // ── Ricerca automatica file MOM su Google Drive ──
+  // NUOVO: Ricerca intelligente MOM nel testo
   const contenitoreMom = document.getElementById('det-mom-links');
-  contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #888;">Cerco verbali...</span>';
+  
+  const nomeCompleto = a.nome.toLowerCase().trim();
+  const primaParola = nomeCompleto.split(' ')[0]; 
 
-  fetch(`${SCRIPT_MOM_URL}?azienda=${encodeURIComponent(a.nome)}`)
-    .then(response => response.json())
-    .then(files => {
-      if (files.error) {
-        contenitoreMom.innerHTML = `<span style="font-size: 13px; color: #ff2a2a;">Errore: ${files.error}</span>`;
-        return;
-      }
+  const momTrovati = mom.map((m, i) => { return {m: m, idx: i} }).filter(obj => {
+    const campoAziendaMom = (obj.m.azienda || "").toLowerCase().trim();
+    const testoCompleto = `${obj.m.titolo} ${obj.m.punti} ${obj.m.azioni} ${obj.m.note}`.toLowerCase();
+    
+    const matchCompleto = campoAziendaMom.includes(nomeCompleto) || testoCompleto.includes(nomeCompleto);
+    const matchParziale = primaParola.length >= 3 && (campoAziendaMom.includes(primaParola) || testoCompleto.includes(primaParola));
+    
+    return matchCompleto || matchParziale;
+  });
 
-      if (files.length > 0) {
-        contenitoreMom.innerHTML = files.map(f => `
-          <a href="${f.url}" target="_blank" style="display: flex; align-items: center; gap: 8px; background: #E6F1FB; padding: 8px 12px; border-radius: 6px; text-decoration: none; color: #0C447C; font-size: 12px; font-weight: 500; border: 1px solid #B6D4F0; transition: background 0.2s;">
-            <i class="ti ti-file-word" style="font-size: 16px;"></i> ${f.nome}
-          </a>
-        `).join('');
-      } else {
-        contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #888;">Nessun verbale trovato.</span>';
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #ff2a2a;">Errore di rete.</span>';
-    });
-} // <-- Questa parentesi graffa chiude correttamente apriDettaglio!
+  if (momTrovati.length > 0) {
+    contenitoreMom.innerHTML = momTrovati.map(obj => `
+      <div style="background: #1e1e1e; padding: 10px; border-radius: 8px; border: 1px solid #333; cursor: pointer; transition: background 0.2s;" onclick="apriDettaglioMom(${obj.idx})" onmouseover="this.style.background='#2a2a2a'" onmouseout="this.style.background='#1e1e1e'">
+        <div style="font-size: 12px; font-weight: 600; color: #fff;"><i class="ti ti-file-text" style="color: #185FA5; margin-right: 4px;"></i>${obj.m.titolo}</div>
+        <div style="font-size: 11px; color: #888; margin-top: 4px; padding-left: 18px;">📅 ${obj.m.data || 'Senza data'}</div>
+      </div>
+    `).join('');
+  } else {
+    contenitoreMom.innerHTML = '<span style="font-size: 13px; color: #888;">Nessun verbale trovato.</span>';
+  }
+} // <-- Parentesi che chiude apriDettaglio!
+
+// NUOVO: Funzione per leggere il singolo MOM in popup
+function apriDettaglioMom(idx) {
+  const m = mom[idx];
+  const modalHtml = `
+    <div id="modal-leggi-mom" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+      <div style="background: #111; color: white; width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto; padding: 30px; border-radius: 12px; border: 1px solid #333; position: relative;" onclick="event.stopPropagation()">
+        <button onclick="document.getElementById('modal-leggi-mom').remove()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: #888; cursor: pointer; font-size: 28px;">&times;</button>
+        <h2 style="margin-top: 0; color: #fff; margin-bottom: 8px;">${m.titolo}</h2>
+        <div style="font-size: 13px; color: #aaa; margin-bottom: 24px; border-bottom: 1px solid #333; padding-bottom: 12px;">
+          📅 ${m.data} &nbsp;|&nbsp; 🏢 ${m.azienda} &nbsp;|&nbsp; 👥 ${m.partecipanti}
+        </div>
+        ${m.punti ? `<div style="color:#185FA5; font-size:12px; font-weight:bold; text-transform:uppercase; margin-bottom:4px;">Punti discussi</div><p style="font-size: 14px; color: #ccc; margin-top:0; margin-bottom: 20px; white-space: pre-wrap;">${m.punti}</p>` : ''}
+        ${m.azioni ? `<div style="color:#185FA5; font-size:12px; font-weight:bold; text-transform:uppercase; margin-bottom:4px;">Azioni da fare</div><p style="font-size: 14px; color: #ccc; margin-top:0; margin-bottom: 20px; white-space: pre-wrap;">${m.azioni}</p>` : ''}
+        ${m.note ? `<div style="color:#185FA5; font-size:12px; font-weight:bold; text-transform:uppercase; margin-bottom:4px;">Note</div><p style="font-size: 14px; color: #ccc; margin-top:0; margin-bottom: 20px; white-space: pre-wrap;">${m.note}</p>` : ''}
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
 
 function chiudiDettaglio() {
   aziendaSelezionata = null;
@@ -298,7 +341,7 @@ function renderMom() {
 }
 
 function eliminaMom(idx) {
-  if (confirm('Vuoi eliminare questo MOM?')) {
+  if (confirm('Vuoi eliminare questo MOM? Attenzione: verrà eliminato solo dal sito, non da Google Sheets.')) {
     mom.splice(idx, 1);
     renderMom();
   }
@@ -308,19 +351,16 @@ function eliminaMom(idx) {
 function renderStatistiche() {
   const area = document.getElementById('stats-area');
 
-  // Conta per stato
   const perStato = {};
   aziende.forEach(a => {
     perStato[a.stato] = (perStato[a.stato] || 0) + 1;
   });
 
-  // Conta per foglio
   const perFoglio = {};
   aziende.forEach(a => {
     perFoglio[a.foglio] = (perFoglio[a.foglio] || 0) + 1;
   });
 
-  // Conta per settore (top 8)
   const perSettore = {};
   aziende.forEach(a => {
     if (a.settore) perSettore[a.settore] = (perSettore[a.settore] || 0) + 1;
@@ -526,6 +566,10 @@ document.getElementById('btn-salva-mom').addEventListener('click', async () => {
       });
 
       renderMom();
+      
+      // Se l'azienda selezionata è aperta, aggiorna la sua scheda per mostrare subito il nuovo MOM
+      if (aziendaSelezionata) apriDettaglio(aziendaSelezionata);
+      
       alert(`MOM "${titolo}" salvato correttamente su Google Sheets!`);
     } else {
       alert(`Errore durante il salvataggio: ${result.error}`);
@@ -540,23 +584,24 @@ document.getElementById('btn-salva-mom').addEventListener('click', async () => {
   }
 });
 
-// ── Avvio e Sistema di Login ───────────────────────────
-const PASSWORD_SEGRETA = "polispace2026"; // <-- Cambia questa password con quella che preferisci!
+// NUOVO: Login asincrono che carica sia le Aziende che i MOM
+const PASSWORD_SEGRETA = "polispace2026"; 
 
-document.getElementById('btn-login').addEventListener('click', () => {
+document.getElementById('btn-login').addEventListener('click', async () => {
   const passInserita = document.getElementById('password-input').value;
   
   if (passInserita === PASSWORD_SEGRETA) {
-    // Se la password è giusta, nascondi la schermata e carica i dati
     document.getElementById('login-overlay').style.display = 'none';
-    leggiAziende(); 
+    
+    mostraCaricamento(true);
+    // Aspetta di caricare prima i verbali e poi le aziende
+    await leggiMomDalFoglio();
+    await leggiAziende(); 
   } else {
-    // Se è sbagliata, mostra l'errore
     document.getElementById('login-error').style.display = 'block';
   }
 });
 
-// Permette di premere "Invio" sulla tastiera per fare il login
 document.getElementById('password-input').addEventListener('keypress', function (e) {
   if (e.key === 'Enter') {
     document.getElementById('btn-login').click();
