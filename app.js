@@ -489,5 +489,25 @@ document.getElementById('btn-salva-mom').addEventListener('click', () => {
   alert(`MOM "${titolo}" salvato!`);
 });
 
-// ── Avvio ──────────────────────────────────────────────
-leggiAziende();
+// ── Avvio e Sistema di Login ───────────────────────────
+const PASSWORD_SEGRETA = "polispace2026"; // <-- Cambia questa password con quella che preferisci!
+
+document.getElementById('btn-login').addEventListener('click', () => {
+  const passInserita = document.getElementById('password-input').value;
+  
+  if (passInserita === PASSWORD_SEGRETA) {
+    // Se la password è giusta, nascondi la schermata e carica i dati
+    document.getElementById('login-overlay').style.display = 'none';
+    leggiAziende(); 
+  } else {
+    // Se è sbagliata, mostra l'errore
+    document.getElementById('login-error').style.display = 'block';
+  }
+});
+
+// Permette di premere "Invio" sulla tastiera per fare il login
+document.getElementById('password-input').addEventListener('keypress', function (e) {
+  if (e.key === 'Enter') {
+    document.getElementById('btn-login').click();
+  }
+});
