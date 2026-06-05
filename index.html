@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoliSpace CRM</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="logo">
+      <span class="logo-text">Poli<span class="logo-accent">Space</span></span>
+      <span class="logo-sub">CRM</span>
+    </div>
+    <nav>
+      <a href="#" class="nav-item active" id="nav-aziende">
+        <i class="ti ti-building"></i> Aziende
+      </a>
+      <a href="#" class="nav-item" id="nav-mom">
+        <i class="ti ti-file-text"></i> MOM
+      </a>
+      <a href="#" class="nav-item" id="nav-statistiche">
+        <i class="ti ti-chart-bar"></i> Statistiche
+      </a>
+    </nav>
+  </div>
+
+  <div class="main">
+
+    <!-- PAGINA AZIENDE -->
+    <div id="pagina-aziende">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h1>Aziende</h1>
+          <span id="contatore" class="contatore">0 aziende</span>
+        </div>
+        <div class="topbar-right">
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" id="search" placeholder="Cerca azienda o contatto...">
+          </div>
+          <select id="filtro-foglio">
+            <option value="">Tutti i fogli</option>
+            <option>General</option>
+            <option>SpaceTech</option>
+            <option>CubeSat</option>
+            <option>RoverTech</option>
+          </select>
+          <select id="filtro-stato">
+            <option value="">Tutti gli stati</option>
+            <option>To contact</option>
+            <option>Contacted</option>
+            <option>Meeting done</option>
+            <option>Relation going on</option>
+            <option>Partnership signed</option>
+            <option>Project going on</option>
+            <option>To re-contact</option>
+            <option>Collaboration done</option>
+            <option>Not Possible</option>
+          </select>
+          <button id="btn-nuova" class="btn-primary">
+            <i class="ti ti-plus"></i> Nuova azienda
+          </button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-label">Totale aziende</span>
+          <span class="stat-value" id="stat-tot">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Da ricontattare</span>
+          <span class="stat-value amber" id="stat-recontact">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Partnership attive</span>
+          <span class="stat-value green" id="stat-partner">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">In trattativa</span>
+          <span class="stat-value blue" id="stat-tratt">0</span>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <div class="table-wrap">
+          <table id="tabella">
+            <thead>
+              <tr>
+                <th>Stato</th>
+                <th>Azienda</th>
+                <th>Contatto</th>
+                <th>Settore</th>
+                <th>Foglio</th>
+                <th>Aggiornato</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="dettaglio" id="dettaglio">
+          <div class="det-placeholder" id="det-placeholder">
+            <i class="ti ti-cursor-text"></i>
+            <p>Clicca su un'azienda per vedere i dettagli</p>
+          </div>
+          <div class="det-content" id="det-content" style="display:none;">
+            <div class="det-header">
+              <div>
+                <h2 id="det-nome"></h2>
+                <span id="det-settore" class="det-settore"></span>
+              </div>
+              <button class="btn-icon" id="btn-chiudi">
+                <i class="ti ti-x"></i>
+              </button>
+            </div>
+            <div id="det-stato-wrap" style="margin-bottom:1rem;"></div>
+            <div class="det-fields">
+              <div class="det-field">
+                <i class="ti ti-user"></i>
+                <div>
+                  <span class="field-label">Contatto</span>
+                  <span class="field-value" id="det-contatto"></span>
+                </div>
+              </div>
+              <div class="det-field">
+                <i class="ti ti-mail"></i>
+                <div>
+                  <span class="field-label">Email</span>
+                  <a class="field-value link" id="det-email" href="#"></a>
+                </div>
+              </div>
+              <div class="det-field">
+                <i class="ti ti-world"></i>
+                <div>
+                  <span class="field-label">Sito web</span>
+                  <a class="field-value link" id="det-sito" href="#" target="_blank"></a>
+                </div>
+              </div>
+              <div class="det-field">
+                <i class="ti ti-school"></i>
+                <div>
+                  <span class="field-label">Tesi / Stage</span>
+                  <span class="field-value" id="det-tesi"></span>
+                </div>
+              </div>
+              <div class="det-field">
+                <i class="ti ti-speakerphone"></i>
+                <div>
+                  <span class="field-label">Seminari / Workshop</span>
+                  <span class="field-value" id="det-seminari"></span>
+                </div>
+              </div>
+              <div class="det-field">
+                <i class="ti ti-notebook"></i>
+                <div>
+                  <span class="field-label">Note / Relazione</span>
+                  <span class="field-value" id="det-note"></span>
+                </div>
+              </div>
+              <div class="det-field">
+                <i class="ti ti-folder"></i>
+                <div>
+                  <span class="field-label">File Drive</span>
+                  <a class="field-value link" id="det-drive" href="#" target="_blank"></a>
+                </div>
+              </div>
+              <div class="det-field">
+                <i class="ti ti-file-text"></i>
+                <div>
+                  <span class="field-label">MOM collegati</span>
+                  <span class="field-value" id="det-mom"></span>
+                </div>
+              </div>
+            </div>
+            <div class="det-actions">
+              <p class="field-label" style="margin-bottom:6px;">Cambia stato</p>
+              <select id="nuovo-stato">
+                <option>To contact</option>
+                <option>Contacted</option>
+                <option>Meeting done</option>
+                <option>Relation going on</option>
+                <option>Partnership signed</option>
+                <option>Project going on</option>
+                <option>To re-contact</option>
+                <option>Collaboration done</option>
+                <option>Not Possible</option>
+              </select>
+              <button class="btn-primary" style="width:100%; margin-top:8px;" id="btn-salva">
+                <i class="ti ti-device-floppy"></i> Salva su Sheets
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA MOM -->
+    <div id="pagina-mom" style="display:none;">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h1>MOM</h1>
+          <span class="contatore">Verbali delle riunioni</span>
+        </div>
+        <div class="topbar-right">
+          <button id="btn-nuovo-mom" class="btn-primary">
+            <i class="ti ti-plus"></i> Nuovo MOM
+          </button>
+        </div>
+      </div>
+      <div class="mom-area" id="mom-area"></div>
+    </div>
+
+    <!-- PAGINA STATISTICHE -->
+    <div id="pagina-statistiche" style="display:none;">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h1>Statistiche</h1>
+          <span class="contatore">Panoramica relazioni</span>
+        </div>
+      </div>
+      <div class="stats-area" id="stats-area"></div>
+    </div>
+
+  </div>
+
+  <!-- MODAL NUOVA AZIENDA -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Nuova azienda</h2>
+        <button class="btn-icon" id="btn-chiudi-modal">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nome azienda *</label>
+          <input type="text" id="f-nome" placeholder="es. SpaceX">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Foglio</label>
+            <select id="f-foglio">
+              <option>General</option>
+              <option>SpaceTech</option>
+              <option>CubeSat</option>
+              <option>RoverTech</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Stato</label>
+            <select id="f-stato">
+              <option>To contact</option>
+              <option>Contacted</option>
+              <option>Meeting done</option>
+              <option>Relation going on</option>
+              <option>Partnership signed</option>
+              <option>Project going on</option>
+              <option>To re-contact</option>
+              <option>Collaboration done</option>
+              <option>Not Possible</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome contatto</label>
+            <input type="text" id="f-contatto" placeholder="es. Mario Rossi">
+          </div>
+          <div class="form-group">
+            <label>Posizione</label>
+            <input type="text" id="f-posizione" placeholder="es. CEO">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="f-email" placeholder="es. mario@azienda.com">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Settore</label>
+            <input type="text" id="f-settore" placeholder="es. Launchers">
+          </div>
+          <div class="form-group">
+            <label>Sito web</label>
+            <input type="text" id="f-sito" placeholder="https://...">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Note</label>
+          <textarea id="f-note" placeholder="Relazione con l'azienda, contesto..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tesi / Stage</label>
+            <select id="f-tesi">
+              <option value="">—</option>
+              <option>Sì</option>
+              <option>No</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Seminari</label>
+            <select id="f-seminari">
+              <option value="">—</option>
+              <option>Sì</option>
+              <option>No</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-annulla">Annulla</button>
+        <button class="btn-primary" id="btn-salva-nuova">
+          <i class="ti ti-plus"></i> Aggiungi azienda
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NUOVO MOM -->
+  <div class="modal-overlay" id="modal-mom">
+    <div class="modal" style="width:680px;">
+      <div class="modal-header">
+        <h2>Nuovo MOM</h2>
+        <button class="btn-icon" id="btn-chiudi-mom">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Titolo riunione *</label>
+            <input type="text" id="m-titolo" placeholder="es. Call con Leonardo S.p.A">
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="m-data">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Partecipanti</label>
+          <input type="text" id="m-partecipanti" placeholder="es. Mario Rossi, Luca Bianchi">
+        </div>
+        <div class="form-group">
+          <label>Azienda coinvolta</label>
+          <input type="text" id="m-azienda" placeholder="es. Leonardo S.p.A">
+        </div>
+        <div class="form-group">
+          <label>Punti discussi</label>
+          <textarea id="m-punti" placeholder="- Punto 1&#10;- Punto 2&#10;- Punto 3" style="min-height:120px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Azioni da fare</label>
+          <textarea id="m-azioni" placeholder="- Azione 1 (responsabile)&#10;- Azione 2 (responsabile)" style="min-height:80px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Note aggiuntive</label>
+          <textarea id="m-note" placeholder="Qualsiasi altra informazione rilevante..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-annulla-mom">Annulla</button>
+        <button class="btn-primary" id="btn-salva-mom">
+          <i class="ti ti-device-floppy"></i> Salva MOM
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
